@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحقق من حالة التربية العسكرية - جامعة القاهرة</title>
+    <!-- تحميل مكتبة Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- تعيين خط Cairo وتهيئة Tailwind -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f7f7f7; /* خلفية فاتحة */
+        }
+        .success {
+            background-color: #d1fae5; /* أخضر فاتح */
+            color: #065f46; /* نص أخضر داكن */
+            border-color: #10b981;
+        }
+        .failure {
+            background-color: #fee2e2; /* أحمر فاتح */
+            color: #991b1b; /* نص أحمر داكن */
+            border-color: #f87171;
+        }
+    </style>
+</head>
+<body class="p-4 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-md bg-white p-6 md:p-8 rounded-xl shadow-2xl border border-gray-100">
+        
+        <!-- منطقة الشعار وعنوان الجامعة والكلية -->
+        <div class="text-center mb-8">
+            <!-- الشعار: شعار جامعة القاهرة -->
+            <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/b/bf/%D8%B4%D8%B9%D8%A7%D8%B1_%D8%AC%D8%A7%D9%85%D8%B9%D8%A9_%D8%A7%D9%84%D9%82%D8%A7%D9%87%D8%B1%D8%A9.png"
+                alt="شعار جامعة القاهرة" 
+                class="mx-auto h-24 w-24 mb-4 object-contain"
+                onerror="this.onerror=null;this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=شعار';"
+            >
+            
+            <!-- رابط جامعة القاهرة -->
+            <a href="https://cu.edu.eg/ar/Home" target="_blank" class="text-2xl font-bold text-gray-800 hover:text-blue-600 transition duration-200">
+                جامعة القاهرة
+            </a>
+            
+            <!-- رابط كلية الحقوق -->
+            <a href="https://www.law.cu.edu.eg/" target="_blank" class="block text-xl font-medium text-blue-700 hover:text-blue-500 mb-4 transition duration-200">
+                كلية الحقوق
+            </a>
+            
+            <!-- عنوان التطبيق الأساسي -->
+            <h3 class="text-3xl font-extrabold text-blue-900 border-t pt-4 mt-4">تحقق من حالة التربية العسكرية</h3>
+        </div>
+
+        <!-- حقل إدخال الرقم القومي -->
+        <div class="mb-6">
+            <label for="nationalId" class="block text-lg font-semibold text-gray-700 mb-2">الرقم القومي للطالب:</label>
+            <input 
+                type="text" 
+                id="nationalId" 
+                maxlength="14"
+                placeholder="أدخل الرقم القومي المكون من 14 رقمًا" 
+                class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500 focus:border-blue-500 transition duration-300 text-left"
+                style="direction: ltr;"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+            >
+        </div>
+
+        <!-- زر التحقق -->
+        <button 
+            onclick="checkStatus()"
+            class="w-full bg-blue-700 hover:bg-blue-800 text-white text-lg font-bold py-3 rounded-xl shadow-lg transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
+        >
+            تحقق
+        </button>
+
+        <!-- رسائل الخطأ -->
+        <p id="errorMessage" class="text-center text-red-600 mt-4 font-medium hidden"></p>
+
+        <!-- منطقة عرض النتائج -->
+        <div id="resultContainer" class="mt-8 p-4 md:p-6 rounded-xl border-4 hidden transition-all duration-500 ease-in-out" role="status">
+            
+            <div id="studentInfo" class="space-y-3 mb-4 border-b pb-4 border-gray-300">
+                <p class="text-base font-semibold text-gray-800 flex justify-between">
+                    <span>الاسم:</span>
+                    <span id="studentName" class="font-normal text-gray-600"></span>
+                </p>
+                <p class="text-base font-semibold text-gray-800 flex justify-between">
+                    <span>الفرقة:</span>
+                    <span id="studentYear" class="font-normal text-gray-600"></span>
+                </p>
+                <p class="text-base font-semibold text-gray-800 flex justify-between">
+                    <span>الرقم القومي:</span>
+                    <span id="studentIdDisplay" class="font-normal text-gray-600 ltr-text" style="direction: ltr;"></span>
+                </p>
+            </div>
+
+            <div class="text-center">
+                <p id="statusMessage" class="text-xl font-bold"></p>
+            </div>
+        </div>
+        
+        <!-- إشعار حقوق الطبع والنشر المضاف حديثاً -->
+        <p class="text-center text-xs text-gray-500 mt-6 border-t pt-4">
+            &copy; الحقوق محفوظة لجامعة القاهرة - كلية الحقوق
+        </p>
+
+    </div>
+
+    <script>
+        // تحديد الأرقام القومية وحالاتها
+        const SUCCESS_ID = "29908282103835";
+        const FAILURE_ID_DEMO = "30101012100000"; // الرقم القومي الذي طلبته لحالة الفشل
+
+        const studentsData = {
+            [SUCCESS_ID]: {
+                name: "احمد سيد محمد حسن سيد",
+                year: "الرابعة",
+                status: "تم الانتهاء من التربية العسكرية",
+                class: "success"
+            },
+            [FAILURE_ID_DEMO]: {
+                name: "سارة محمود علي",
+                year: "الثالثة",
+                status: "لم يتم تأديتها بعد",
+                class: "failure"
+            },
+            // حالة فشل عامة لأي رقم آخر
+            'default': {
+                name: "طالب غير مسجل أو لم ينه الإجراءات",
+                year: "غير محدد",
+                status: "لم يتم تأديتها بعد",
+                class: "failure"
+            }
+        };
+
+        function checkStatus() {
+            const nationalIdInput = document.getElementById('nationalId');
+            const nationalId = nationalIdInput.value.trim();
+            const resultContainer = document.getElementById('resultContainer');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // إخفاء النتائج ورسائل الخطأ السابقة
+            resultContainer.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+
+            // التحقق من صحة الإدخال
+            if (nationalId.length !== 14 || !/^\d{14}$/.test(nationalId)) {
+                errorMessage.textContent = "الرجاء إدخال رقم قومي صحيح ومكون من 14 رقمًا.";
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            // تحديد بيانات الطالب
+            const studentData = studentsData[nationalId] || studentsData['default'];
+
+            // عرض بيانات الطالب
+            document.getElementById('studentName').textContent = studentData.name;
+            document.getElementById('studentYear').textContent = studentData.year;
+            document.getElementById('studentIdDisplay').textContent = nationalId;
+            document.getElementById('statusMessage').textContent = studentData.status;
+
+            // تحديث تصميم حاوية النتائج بناءً على الحالة
+            resultContainer.className = 'mt-8 p-4 md:p-6 rounded-xl border-4 transition-all duration-500 ease-in-out'; // إعادة تعيين الفئات الأساسية
+            
+            // إزالة فئات الحالة القديمة وإضافة الجديدة
+            resultContainer.classList.remove('success', 'failure', 'border-green-500', 'border-red-500');
+            if (studentData.class === 'success') {
+                resultContainer.classList.add('success', 'border-green-500');
+            } else {
+                resultContainer.classList.add('failure', 'border-red-500');
+            }
+
+            // إظهار حاوية النتائج
+            resultContainer.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
+
